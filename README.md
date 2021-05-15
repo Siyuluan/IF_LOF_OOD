@@ -14,16 +14,14 @@ The models can be recomputed using the scripts `run/train_INSTANCE.py` where `IN
 
 We only show our results. For faster calculation, some experiments of the original author are deleted here. If you want to reproduce it completely, please delete part of the python comment code
 
-Here only take the GTSRB data set as an example  
+Here only take the GTSRB data set as an example：  
 
+1. In the run/run_experiments file, you should change the path to your own path， and run this script    
 
+2 In the evaluate_all function, set True for LOF, False for IF  
 
-1. In the run/run_experiments file, you should change the path to your own path， and run this script  
+3 In the EvaluateCombination file, change the hyperparameters of IF or LOF by changing for loop  
 
-2 In the evaluate_all function, set True for LOF, False for IF
+4 When the program ends, it will display Done! You should get the result txt now  
 
-3 In the EvaluateCombination file, change the hyperparameters of IF or LOF by changing for loop
-
-4 When the program ends, it will display Done! You should get the result txt now.
-
-5 Results are in the file
+5 Results are in the file  
