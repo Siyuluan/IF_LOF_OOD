@@ -1,8 +1,8 @@
-This repository contains our source code for the paper submission 
-Siyu Luan, Zonghua Gu, Leonid Freidovich, Lili Jiang, Out-Of-Distribution Detection for Deep Neural Networks with Isolation Forest and Local Outlier Factor.
+This repository contains our source code for the paper submission   
+Siyu Luan, Zonghua Gu, Leonid Freidovich, Lili Jiang, Out-Of-Distribution Detection for Deep Neural Networks with Isolation Forest and Local Outlier Factor.  
 It is based on the open-source software provided by the authors of
-Henzinger, Thomas A., Anna Lukina, and Christian Schilling. "Outside the box: Abstraction-based monitoring of neural networks." arXiv preprint arXiv:1911.09032 (2019).
-We added Isolation Forest and Local Outlier Factor for runtime monitoring and anomaly/outlier detection of neural networks. 
+Henzinger, Thomas A., Anna Lukina, and Christian Schilling. "Outside the box: Abstraction-based monitoring of neural networks." arXiv preprint arXiv:1911.09032 (2019).  
+We added Isolation Forest and Local Outlier Factor for runtime monitoring and anomaly/outlier detection of neural networks.   
 
 
 ## Models
@@ -16,7 +16,7 @@ We only show our results. For faster calculation, some experiments of the origin
 
 Here only take the GTSRB data set as an example：  
 
-1. In the run/run_experiments file, you should change the path to your own path， and run this script    
+1 In the run/run_experiments file, you should change the path to your own path， and run this script    
 
 2 In the evaluate_all function, set True for LOF, False for IF  
 
