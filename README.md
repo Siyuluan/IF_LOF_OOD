@@ -1,36 +1,9 @@
-# Outside the Box
+This repository contains our source code for the paper submission 
+Siyu Luan, Zonghua Gu, Leonid Freidovich, Lili Jiang, Out-Of-Distribution Detection for Deep Neural Networks with Isolation Forest and Local Outlier Factor.
+It is based on the open-source software provided by the authors of
+Henzinger, Thomas A., Anna Lukina, and Christian Schilling. "Outside the box: Abstraction-based monitoring of neural networks." arXiv preprint arXiv:1911.09032 (2019).
+We added Isolation Forest and Local Outlier Factor for runtime monitoring and anomaly/outlier detection of neural networks. 
 
-This repository contains the implementation and data used in the paper [Outside the Box: Abstraction-Based Monitoring of Neural Networks](http://ecai2020.eu/papers/1282_paper.pdf), published at [ECAI 2020](http://ecai2020.eu/). To cite the paper, follow [this link](https://dblp.org/rec/conf/ecai/HenzingerL020.html?view=bibtex) or directly use:
-
-```
-@article{outsidethebox19,
-  author    = {Thomas A. Henzinger and
-               Anna Lukina and
-               Christian Schilling},
-  title     = {Outside the Box: Abstraction-Based Monitoring of Neural Networks},
-  year      = {2020},
-  booktitle = {{ECAI}},
-  series    = {Frontiers in Artificial Intelligence and Applications},
-  volume    = {325},
-  pages     = {2433--2440},
-  publisher = {{IOS} Press},
-  year      = {2020},
-  url       = {https://doi.org/10.3233/FAIA200375},
-  doi       = {10.3233/FAIA200375}
-}
-```
-
-# Installation
-
-We use Python 3.6 but other Python versions may work as well. The package requirements that need to be installed are found in the file `requirements.txt`.
-
-# Recreation of the results
-
-Below we describe how to obtain the results shown in the paper.
-
-## Data
-
-Due to Gihub's limitation of the file size, one of the datasets needed to be compressed. To use this dataset, you need to manually go to the folder `data/GTSRB/` and unzip the file `train.zip`.
 
 ## Models
 
@@ -39,12 +12,16 @@ The models can be recomputed using the scripts `run/train_INSTANCE.py` where `IN
 
 ## Evaluation
 
-The scripts to reproduce the figures and tables of the paper are found in the folder `run/`:
+We only show our results. For faster calculation, some experiments of the original author are deleted here. If you want to reproduce it completely, please delete part of the python comment code
 
-- Fig. 2: `plot_toy_model.py`
-- Fig. 3: `plot_boxes.py` (Note that this will not produce the exact same figure because we obtained the figure for a network with different training parameters that we forgot to note down.)
-- Fig. 4: `plot_explanation_alpha_thresholding.py`
-- Table 2: `plot_legend.py`
-- Figures 5-8 and Table 3: `run_experiments.py` (This script calls scripts for the individual experiments that can also be run in isolation.)
+Here only take the GTSRB data set as an example
 
-Intermediate results of the experiments are stored in `.csv` files in the `run/` folder. The final plots are stored in the top folder.
+1. In the run/run_experiments file, you should change the path to your own path， and run this script
+
+2 In the evaluate_all function, set True for LOF, False for IF
+
+3 In the EvaluateCombination file, change the hyperparameters of IF or LOF by changing for loop
+
+4 When the program ends, it will display Done! You should get the result txt now.
+
+5 Results are in the file

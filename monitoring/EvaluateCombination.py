@@ -3,11 +3,11 @@ from run.Runner import run
 from utils import *
 from data import *
 from trainers import *
-
+import math
 
 def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_model, data_train_monitor,
                  data_test_monitor, data_run, monitor_manager: MonitorManager, alphas=None,
-                 model_trainer=StandardTrainer(), seed=0, n_epochs=-1, batch_size=-1):
+                 model_trainer=StandardTrainer(), seed=0, n_epochs=-1, batch_size=-1,LOF = True):
     # set random seed
     set_random_seed(seed)
 
@@ -34,28 +34,177 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
     monitor_manager.normalize_and_initialize(model, len(labels_rest))
 
     # train monitors
-    monitor_manager.train(model=model, data_train=data_train_monitor, data_test=data_test_monitor,
-                          statistics=statistics)
+    #monitor_manager.train(model=model, data_train=data_train_monitor, data_test=data_test_monitor,
+    #                      statistics=statistics)
 
     # run monitors & collect novelties
-    history_run = monitor_manager.run(model=model, data=data_run, statistics=statistics)
-    novelty_wrapper_run = history_run.novelties(data_run, all_classes_network, all_classes_rest)
+    #history_run = monitor_manager.run(model=model, data=data_run, statistics=statistics)
+    #novelty_wrapper_run = history_run.novelties(data_run, all_classes_network, all_classes_rest)
 
-    if alphas is None:
-        return history_run, novelty_wrapper_run, statistics
+    #if alphas is None:
+    #    return history_run, novelty_wrapper_run, statistics
 
     # run alpha threshold
-    histories_alpha_thresholding = []
-    novelty_wrappers_alpha_thresholding = []
-    for alpha in alphas:
-        history_alpha_thresholding = History()
-        test_alpha(model, data_run, history_alpha_thresholding, alpha)
-        novelty_wrapper_alpha_thresholding =\
-            history_alpha_thresholding.novelties(data_run, all_classes_network, all_classes_rest)
-        histories_alpha_thresholding.append(history_alpha_thresholding)
-        novelty_wrappers_alpha_thresholding.append(novelty_wrapper_alpha_thresholding)
+    #histories_alpha_thresholding = []
+    #novelty_wrappers_alpha_thresholding = []
+    #for alpha in alphas:
+    #    history_alpha_thresholding = History()
+    #    test_alpha(model, data_run, history_alpha_thresholding, alpha)
+    #    novelty_wrapper_alpha_thresholding =\
+    #        history_alpha_thresholding.novelties(data_run, all_classes_network, all_classes_rest)
+    #    histories_alpha_thresholding.append(history_alpha_thresholding)
+    #    novelty_wrappers_alpha_thresholding.append(novelty_wrapper_alpha_thresholding)
+    layer2values_run, _ = obtain_predictions(model=model, data=data_run, layers=monitor_manager.layers())
+    ground_truths_data_run = data_run.ground_truths()
+    anomaly_data = 0
+    anomaly_labels = []
+    for class_id in all_classes_rest:
+        if class_id not in all_classes_network:
+            anomaly_labels.append(class_id)
+    print("anomaly_labels: " + str(anomaly_labels))
+    count = 0
+    ### LOF
+    if(LOF):
+        file = 'trainLOF.txt'
+        for w in range(2,3): # n_neighbors
+            n_neighbors = w *10
+            for j in range(1,2): # leaf_size
+                leaf_size = j *30
+                contamination = 0.03
+                for z in range(1): # contamination
+                    print("Training "+str(count)+"th LOF is beginning")
+                    count = count + 1
+                    lof_train = monitor_manager.trainLOF(model=model, data_train=data_train_monitor,n_neighbors = n_neighbors ,leaf_size =leaf_size,contamination =contamination)
+                    print(" Run LOF now ")
+                    true_negatives = 0
+                    false_positives = 0
+                    false_negatives = 0
+                    true_positives = 0
+                    anomaly_data = 0
+                    for i, (c_ground_truth) in enumerate(zip(ground_truths_data_run)):
+                        countlayer = 0
+                        for layer in monitor_manager.layers():
+                            layer2values_run[layer][i] = np.array(layer2values_run[layer][i])
+                            S = lof_train[layer].predict([layer2values_run[layer][i]])
+                            if (S[0] == 1):
+                                countlayer = countlayer + 1
+                            else:
+                                countlayer = countlayer
+                        if (countlayer == 1):
+                            accepts = True
+                        else:
+                            accepts = False
+                        if c_ground_truth in anomaly_labels:
+                            anomaly_data += 1
+                            if accepts:
+                                false_negatives += 1
+                            else:
+                                true_positives += 1
+                        else:
+                            if accepts:
+                                true_negatives += 1
+                            else:
+                                false_positives += 1
+                    contamination = contamination + 0.02 # contamination
+                    with open(file, 'a+') as f:
+                        f.write('\n'+ "The result is: " +'\n')
+                        f.write("\n ++++++++++++++++++++++++++++++++++++++" + '\n')
+                        f.write("How many anomaly_data in dataset:" + str(anomaly_data)+ '\n')
+                        f.write("true_negatives=" + str(true_negatives)+ '\n')
+                        f.write("false_positives=" + str(false_positives)+ '\n')
+                        f.write("false_negatives=" + str(false_negatives)+ '\n')
+                        f.write("true_positives=" + str(true_positives)+ '\n')
+                        if (true_positives == 0):
+                            f.write("true_positives is zero"+ '\n')
+                        else:
+                            P = true_positives / (true_positives + false_positives)
+                            R = true_positives / (true_positives + false_negatives)
+                            F1 = (2 * P * R) / (P + R)
+                            FPR = false_positives / (false_positives + true_negatives)
+                            Accuracy = (true_positives + true_negatives) / (
+                                    true_positives + true_negatives + false_positives + false_negatives)
+                            f.write("P is: " + str(round(P, 3))+ '\n')
+                            f.write("R is: " + str(round(R, 3))+ '\n')
+                            f.write("F1 is: " + str(round(F1, 3))+ '\n')
+                            f.write("FPR is: " + str(round(FPR, 3))+ '\n')
+                            f.write("Accuracy is: " + str(round(Accuracy, 3))+ '\n')
+                        f.write("\n ++++++++++++++++ Done ++++++++++++++++"+ '\n')
 
-    return history_run, histories_alpha_thresholding, novelty_wrapper_run, novelty_wrappers_alpha_thresholding,\
+
+        print(" Run data of LOF is Done")
+    else:
+        file = 'trainIF.txt'
+        for i in range(3, 4):  # n_estimators
+            n_estimators = i * 100
+            for i in range(1):  # max_samples
+                y = 15 + i
+                max_samples = int(math.pow(2, y))
+                contamination = 0.03
+                for i in range(3):  # contamination
+                    print("Training " + str(count) + "th IF is beginning")
+                    count = count + 1
+                    if_train = monitor_manager.trainIF(model=model, data_train=data_train_monitor,
+                                                       n_estimators=n_estimators, max_samples=max_samples,
+                                                       contamination=contamination)
+                    print(" Testing IF now ")
+                    true_negatives = 0
+                    false_positives = 0
+                    false_negatives = 0
+                    true_positives = 0
+                    anomaly_data = 0
+                    for i, (c_ground_truth) in enumerate(zip(ground_truths_data_run)):
+                        countlayer = 0
+                        for layer in monitor_manager.layers():
+                            layer2values_run[layer][i] = np.array(layer2values_run[layer][i])
+                            S = if_train[layer].predict([layer2values_run[layer][i]])
+                            if (S[0] == 1):
+                                countlayer = countlayer + 1
+                            else:
+                                countlayer = countlayer
+                        if (countlayer == 1):
+                            accepts = True
+                        else:
+                            accepts = False
+                        if c_ground_truth in anomaly_labels:
+                            anomaly_data += 1
+                            if accepts:
+                                false_negatives += 1
+                            else:
+                                true_positives += 1
+                        else:
+                            if accepts:
+                                true_negatives += 1
+                            else:
+                                false_positives += 1
+                    contamination = contamination + 0.02  # contamination
+                    with open(file, 'a+') as f:
+                        f.write('\n' + "The result is: " + '\n')
+                        f.write("\n ++++++++++++++++++++++++++++++++++++++" + '\n')
+                        f.write("How many anomaly_data in dataset:" + str(anomaly_data) + '\n')
+                        f.write("true_negatives=" + str(true_negatives) + '\n')
+                        f.write("false_positives=" + str(false_positives) + '\n')
+                        f.write("false_negatives=" + str(false_negatives) + '\n')
+                        f.write("true_positives=" + str(true_positives) + '\n')
+                        if (true_positives == 0):
+                            f.write("true_positives is zero" + '\n')
+                        else:
+                            P = true_positives / (true_positives + false_positives)
+                            R = true_positives / (true_positives + false_negatives)
+                            F1 = (2 * P * R) / (P + R)
+                            FPR = false_positives / (false_positives + true_negatives)
+                            Accuracy = (true_positives + true_negatives) / (
+                                    true_positives + true_negatives + false_positives + false_negatives)
+                            f.write("P is: " + str(round(P, 3)) + '\n')
+                            f.write("R is: " + str(round(R, 3)) + '\n')
+                            f.write("F1 is: " + str(round(F1, 3)) + '\n')
+                            f.write("FPR is: " + str(round(FPR, 3)) + '\n')
+                            f.write("Accuracy is: " + str(round(Accuracy, 3)) + '\n')
+                        f.write("\n ++++++++++++++++ Done ++++++++++++++++" + '\n')
+        print(" Testing IF is Done")
+
+    statistics = statistics
+    history_run = histories_alpha_thresholding = novelty_wrapper_run = novelty_wrappers_alpha_thresholding = 0
+    return history_run, histories_alpha_thresholding, novelty_wrapper_run, novelty_wrappers_alpha_thresholding, \
            statistics
 
 

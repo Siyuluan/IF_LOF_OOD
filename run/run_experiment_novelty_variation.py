@@ -11,9 +11,9 @@ def run_experiment_novelty_variation():
     instances = [
         # entries: instance constructor, box_abstraction, flag for using Boolean abstraction, epsilon,
         # clustering threshold, class count
-        (instance_MNIST, box_abstraction_MNIST, True, 0.0, 0.07, -1),
-        (instance_F_MNIST, box_abstraction_F_MNIST, True, 0.0, 0.07, -1),
-        (instance_CIFAR10, box_abstraction_CIFAR10, False, 0.0, 0.07, -1),
+        #(instance_MNIST, box_abstraction_MNIST, True, 0.0, 0.07, -1),
+        #(instance_F_MNIST, box_abstraction_F_MNIST, True, 0.0, 0.07, -1),
+        #(instance_CIFAR10, box_abstraction_CIFAR10, False, 0.0, 0.07, -1),
         (instance_GTSRB, box_abstraction_GTSRB, False, 0.1, 0.3, 20)
     ]
 
@@ -29,7 +29,11 @@ def run_experiment_novelty_variation():
             n_classes_max = total_classes
         else:
             n_classes_max += 1
-        for n_classes in range(2, n_classes_max):
+
+        n_classes = n_classes_max - 1
+
+        #for n_classes in range(2, n_classes_max):
+        if (n_classes):
             print("\n--- new instance ---\n")
             # load instance
             data_train_model, data_test_model, data_train_monitor, data_test_monitor, data_run, model_path, _ = \
@@ -44,14 +48,15 @@ def run_experiment_novelty_variation():
                 monitor3 = Monitor(layer2abstraction=layer2abstraction)
                 monitors.append(monitor3)
             monitor_manager = MonitorManager(monitors, clustering_threshold=clustering_threshold)
-
+            # True for LOF, False for IF
             # run instance
             history_run, histories_alpha_thresholding, novelty_wrapper_run, novelty_wrappers_alpha_thresholding, \
                 statistics = evaluate_all(seed=seed, data_name=data_name, data_train_model=data_train_model,
                                           data_test_model=data_test_model, data_train_monitor=data_train_monitor,
                                           data_test_monitor=data_test_monitor, data_run=data_run, model_name=model_name,
-                                          model_path=model_path, monitor_manager=monitor_manager, alphas=alphas)
-
+                                          model_path=model_path, monitor_manager=monitor_manager, alphas=alphas,LOF=True)
+    print("Done! You should get the result txt now.")
+    '''
             # print/store statistics
             print_general_statistics(statistics, data_train_monitor, data_run)
             print_and_store_monitor_statistics(storage_monitors, monitors, statistics, history_run,
@@ -81,7 +86,7 @@ def run_experiment_novelty_variation():
 
     # close log
     logger.stop()
-
+    '''
 
 def plot_experiment_novelty_variation():
     # global options

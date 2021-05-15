@@ -1,5 +1,7 @@
 from . import *
 from utils import *
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
 
 
 class MonitorManager(object):
@@ -85,6 +87,70 @@ class MonitorManager(object):
             print("additional training of monitors on novelty data")
             self._train_monitors(data=data_test, layer2values=layer2values_novel, layer2class2clusterer=None,
                                  predictions=predictions_novel, statistics=statistics, includes_test_data=False)
+
+
+
+    # train IF
+    def trainIF(self, model, data_train: DataSpec,ignore_misclassifications=ONLY_LEARN_FROM_CORRECT_CLASSIFICATIONS,n_estimators = int ,max_samples =int,contamination =float):
+        file = 'trainIF.txt'
+        layer2values, timer = obtain_predictions(model=model, data=data_train, layers=self.layers(),
+                                                ignore_misclassifications=ignore_misclassifications)
+        layers = self.layers()
+        if_train = dict()
+        for layer in layers:
+            neurons_number=model.layers[layer].output_shape[1]
+            X_train = np.array(layer2values[layer])
+            X_train = X_train.reshape(-1, neurons_number)
+            X_train = X_train.astype(np.double)
+            rng = np.random.RandomState(42)
+            label = np.ones(len(X_train))
+            clf = IsolationForest(random_state=rng, n_estimators=n_estimators, max_samples=max_samples, contamination=contamination)
+            F0 = clf.fit(X_train)
+            if_train[layer] = F0
+            with open(file, 'a+') as d:
+                d.write("------------------------------------\n")
+                d.write("layer is:" + str(layer)+ '\n')
+                d.write("neurons_number:" + str(neurons_number)+ '\n')
+                d.write("The data_train_monitor.classes:" + str(classes2string(data_train.classes))+ '\n')
+                d.write("The data_train_monitor size:" + str(data_train.n)+ '\n')
+                d.write("n_estimators:" + str(n_estimators) + '\n')
+                d.write("max_samples:" + str(max_samples) + '\n')
+                d.write("contamination:" + str(contamination) + '\n')
+                d.write("n_features_ : " + str(clf.n_features_)+ '\n')
+                d.write("offset_ :" + str(clf.offset_)+ '\n')
+        print(" Training IF is Done")
+        return if_train
+
+    # train LOF
+    def trainLOF(self, model, data_train: DataSpec,ignore_misclassifications=ONLY_LEARN_FROM_CORRECT_CLASSIFICATIONS,n_neighbors = int ,leaf_size =int,contamination =float):
+        file = 'trainLOF.txt'
+        layer2values, timer = obtain_predictions(model=model, data=data_train, layers=self.layers(),
+                                                ignore_misclassifications=ignore_misclassifications)
+        layers = self.layers()
+        lof_train = dict()
+        for layer in layers:
+            print("layer is:"+str(layer))
+            neurons_number=model.layers[layer].output_shape[1]
+            print("neurons_number:"+str(neurons_number))
+            X_train = np.array(layer2values[layer])
+            X_train = X_train.reshape(-1, neurons_number)
+            X_train = X_train.astype(np.double)
+            clf = LocalOutlierFactor(n_neighbors=n_neighbors, novelty=True, contamination=contamination, leaf_size=leaf_size)
+            F0 = clf.fit(X_train)
+            lof_train[layer] = F0
+            with open(file, 'a+') as d:
+                d.write("------------------------------------\n")
+                d.write("layer is:" + str(layer)+ '\n')
+                d.write("neurons_number:" + str(neurons_number)+ '\n')
+                d.write("The data_train_monitor.classes:" + str(classes2string(data_train.classes))+ '\n')
+                d.write("The data_train_monitor size:" + str(data_train.n)+ '\n')
+                d.write("n_neighbors:" + str(n_neighbors) + '\n')
+                d.write("leaf_size:" + str(leaf_size) + '\n')
+                d.write("contamination:" + str(contamination) + '\n')
+                d.write("offset_ :" + str(clf.offset_)+ '\n')
+        print(" Training LOF is Done")
+        return lof_train
+
 
     def run(self, model, data: DataSpec, statistics: Statistics):
         print("\n--- running monitored session ---\n")
