@@ -14,7 +14,7 @@ The models can be recomputed using the scripts `run/train_INSTANCE.py` where `IN
 
 We only show our results. For faster calculation, some experiments of the original author are deleted here. If you want to reproduce it completely, please delete part of the python comment code
 
-Here only take the GTSRB data set as an example
+Here only take the GTSRB data set as an example  
 
 
 
