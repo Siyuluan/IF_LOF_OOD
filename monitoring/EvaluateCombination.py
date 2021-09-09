@@ -4,6 +4,7 @@ from utils import *
 from data import *
 from trainers import *
 import math
+import time
 
 def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_model, data_train_monitor,
                  data_test_monitor, data_run, monitor_manager: MonitorManager, alphas=None,
@@ -74,18 +75,29 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                 for z in range(1): # contamination
                     print("Training "+str(count)+"th LOF is beginning")
                     count = count + 1
+                    train_time_begin = time.time()
                     lof_train = monitor_manager.trainLOF(model=model, data_train=data_train_monitor,n_neighbors = n_neighbors ,leaf_size =leaf_size,contamination =contamination)
+                    train_time_end = time.time()
+                    train_time_all = train_time_end - train_time_begin
                     print(" Run LOF now ")
                     true_negatives = 0
                     false_positives = 0
                     false_negatives = 0
                     true_positives = 0
                     anomaly_data = 0
+                    test_time_begin = time.time()
+                    monitored_layers = list(reversed(monitor_manager.layers()))
                     for i, (c_ground_truth) in enumerate(zip(ground_truths_data_run)):
-                        countlayer = 0
-                        for layer in monitor_manager.layers():
+                        #countlayer = 0
+                        accepts = True
+                        #for layer in monitor_manager.layers():
+                        for layer in monitored_layers:
                             layer2values_run[layer][i] = np.array(layer2values_run[layer][i])
                             S = lof_train[layer].predict([layer2values_run[layer][i]])
+                            if (S[0] == -1):
+                                accepts = False
+                                break
+                        '''
                             if (S[0] == 1):
                                 countlayer = countlayer + 1
                             else:
@@ -94,6 +106,7 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                             accepts = True
                         else:
                             accepts = False
+                        '''
                         if c_ground_truth in anomaly_labels:
                             anomaly_data += 1
                             if accepts:
@@ -106,6 +119,8 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                             else:
                                 false_positives += 1
                     contamination = contamination + 0.02 # contamination
+                    test_time_end = time.time()
+                    test_time_all = test_time_end - test_time_begin
                     with open(file, 'a+') as f:
                         f.write('\n'+ "The result is: " +'\n')
                         f.write("\n ++++++++++++++++++++++++++++++++++++++" + '\n')
@@ -128,6 +143,12 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                             f.write("F1 is: " + str(round(F1, 3))+ '\n')
                             f.write("FPR is: " + str(round(FPR, 3))+ '\n')
                             f.write("Accuracy is: " + str(round(Accuracy, 3))+ '\n')
+                            f.write("training time begin : " + str(train_time_begin) + '\n')
+                            f.write("training time end : " + str(train_time_end) + '\n')
+                            f.write("testing time begin : " + str(test_time_begin) + '\n')
+                            f.write("testing time end : " + str(test_time_end) + '\n')
+                            f.write("train time all : " + str(train_time_all) + '\n')
+                            f.write("test time all : " + str(test_time_all) + '\n')
                         f.write("\n ++++++++++++++++ Done ++++++++++++++++"+ '\n')
 
 
@@ -142,21 +163,32 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                 contamination = 0.03
                 for i in range(3):  # contamination
                     print("Training " + str(count) + "th IF is beginning")
+                    train_time_begin = time.time()
                     count = count + 1
                     if_train = monitor_manager.trainIF(model=model, data_train=data_train_monitor,
                                                        n_estimators=n_estimators, max_samples=max_samples,
                                                        contamination=contamination)
+                    train_time_end = time.time()
+                    train_time_all = train_time_end - train_time_begin
                     print(" Testing IF now ")
                     true_negatives = 0
                     false_positives = 0
                     false_negatives = 0
                     true_positives = 0
                     anomaly_data = 0
+                    test_time_begin = time.time()
+                    monitored_layers = list(reversed(monitor_manager.layers()))
                     for i, (c_ground_truth) in enumerate(zip(ground_truths_data_run)):
-                        countlayer = 0
-                        for layer in monitor_manager.layers():
+                        accepts = True
+                        for layer in monitored_layers:
+                        #countlayer = 0
+                        #for layer in monitor_manager.layers():
                             layer2values_run[layer][i] = np.array(layer2values_run[layer][i])
                             S = if_train[layer].predict([layer2values_run[layer][i]])
+                            if (S[0] == -1):
+                              accepts = False
+                              break
+                            '''
                             if (S[0] == 1):
                                 countlayer = countlayer + 1
                             else:
@@ -165,6 +197,7 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                             accepts = True
                         else:
                             accepts = False
+                            '''
                         if c_ground_truth in anomaly_labels:
                             anomaly_data += 1
                             if accepts:
@@ -177,6 +210,8 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                             else:
                                 false_positives += 1
                     contamination = contamination + 0.02  # contamination
+                    test_time_end = time.time()
+                    test_time_all = test_time_end - test_time_begin
                     with open(file, 'a+') as f:
                         f.write('\n' + "The result is: " + '\n')
                         f.write("\n ++++++++++++++++++++++++++++++++++++++" + '\n')
@@ -199,7 +234,13 @@ def evaluate_all(model_name, model_path, data_name, data_train_model, data_test_
                             f.write("F1 is: " + str(round(F1, 3)) + '\n')
                             f.write("FPR is: " + str(round(FPR, 3)) + '\n')
                             f.write("Accuracy is: " + str(round(Accuracy, 3)) + '\n')
-                        f.write("\n ++++++++++++++++ Done ++++++++++++++++" + '\n')
+                            f.write("training time begin : " + str(train_time_begin) + '\n')
+                            f.write("training time end : " + str(train_time_end) + '\n')
+                            f.write("testing time begin : " + str(test_time_begin) + '\n')
+                            f.write("testing time end : " + str(test_time_end) + '\n')
+                            f.write("train time all : " + str(train_time_all) + '\n')
+                            f.write("test time all : " + str(test_time_all) + '\n')
+                            f.write("\n ++++++++++++++++ Done ++++++++++++++++" + '\n')
         print(" Testing IF is Done")
 
     statistics = statistics
